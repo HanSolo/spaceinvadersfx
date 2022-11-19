@@ -75,6 +75,12 @@ public class Main extends Application {
     private Canvas               canvas;
     private GraphicsContext      ctx;
     private List<Shield>         shields;
+    private AudioClip            torpedoSnd;
+    private AudioClip            explosionSnd;
+    private AudioClip            shipExplosionSnd;
+    private AudioClip            mothershipSnd;
+    private List<AudioClip>      tones;
+    private int                  toneCounter;
     private Image                invader1_1Img;
     private Image                invader1_2Img;
     private Image                invader2_1Img;
@@ -85,6 +91,7 @@ public class Main extends Application {
     private Image                shipImg;
     private Image                shipExplosionImg;
     private Image                torpedoImg;
+    private Image                torpedoGreenImg;
     private Image                torpedoRedImg;
     private Image                invaderTorpedoImg;
     private Image                invaderTorpedoGreenImg;
@@ -113,6 +120,7 @@ public class Main extends Application {
         lastInvaderUpdateCall = System.nanoTime();
         lastHasBeenHitCall    = System.nanoTime();
         lastMothershipCall    = System.nanoTime();
+
         state                 = true;
         timer                 = new AnimationTimer() {
             @Override public void handle(final long now) {
@@ -123,16 +131,20 @@ public class Main extends Application {
                     }
                     if (now > lastInvaderUpdateCall + 500_000_000l) {
                         updateInvaders();
+                        playSound(tones.get(toneCounter));
+                        toneCounter++;
+                        if (toneCounter == 4) { toneCounter = 0; }
                         lastInvaderUpdateCall = now;
                     }
                     if (now > lastMothershipCall + 30_000_000_000l) {
                         motherships.add(new Mothership(mothershipImg, -mothershipImg.getWidth(), 30, RND.nextInt(100)));
+                        playSound(mothershipSnd);
                         lastMothershipCall = now;
                     }
                     if (now > lastImpactCall + 250_000_000l) {
                         impacts.clear();
                     }
-                    if (now > lastInvaderUpdateCall + 250_000_000l) {
+                    if (now > lastInvaderImpactCall + 250_000_000l) {
                         invaderImpacts.clear();
                     }
                     if (hasBeenHit && now > lastHasBeenHitCall + 2_000_000_000l) {
@@ -146,6 +158,15 @@ public class Main extends Application {
         };
         canvas  = new Canvas(WIDTH, HEIGHT);
         ctx     = canvas.getGraphicsContext2D();
+
+        // Load all sounds
+        toneCounter = 0;
+        tones       = new ArrayList<>();
+        tones.add(new AudioClip(getClass().getResource("tone1.mp3").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone2.mp3").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone3.mp3").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone4.mp3").toExternalForm()));
+        loadSounds();
 
         // Load all images
         loadImages();
@@ -214,6 +235,14 @@ public class Main extends Application {
         Platform.exit();
     }
 
+    private void loadSounds() {
+        torpedoSnd       = new AudioClip(getClass().getResource("torpedo.mp3").toExternalForm());
+        explosionSnd     = new AudioClip(getClass().getResource("explosion.mp3").toExternalForm());
+        shipExplosionSnd = new AudioClip(getClass().getResource("shipExplosion.mp3").toExternalForm());
+        mothershipSnd    = new AudioClip(getClass().getResource("mothership.mp3").toExternalForm());
+        mothershipSnd.setCycleCount(-1);
+    }
+
     private void loadImages() {
         invader1_1Img           = new Image(getClass().getResourceAsStream("invader1_1.png"), 36, 36, true, false);
         invader1_2Img           = new Image(getClass().getResourceAsStream("invader1_2.png"), 36, 36, true, false);
@@ -225,6 +254,7 @@ public class Main extends Application {
         shipImg                 = new Image(getClass().getResourceAsStream("ship.png"), 45, 24, true, false);
         shipExplosionImg        = new Image(getClass().getResourceAsStream("shipexplosion.png"), 45, 24, true, false);
         torpedoImg              = new Image(getClass().getResourceAsStream("torpedo.png"), 3, 9, true, false);
+        torpedoGreenImg         = new Image(getClass().getResourceAsStream("torpedo_green.png"), 3, 9, true, false);
         torpedoRedImg           = new Image(getClass().getResourceAsStream("torpedo_red.png"), 3, 9, true, false);
         explosionImg            = new Image(getClass().getResourceAsStream("explosion.png"), 39, 36, true, false);
         invaderTorpedoImg       = new Image(getClass().getResourceAsStream("invadertorpedo.png"), 9, 21, true, false);
@@ -235,7 +265,7 @@ public class Main extends Application {
         invaderImpactImg        = new Image(getClass().getResourceAsStream("invaderImpact.png"), 21, 21, true, false);
     }
 
-    private static final String padLeft(final String text, final String filler, final int n) {
+    private static String padLeft(final String text, final String filler, final int n) {
         return String.format("%" + n + "s", text).replace(" ", filler);
     }
 
@@ -331,8 +361,8 @@ public class Main extends Application {
 
     private void fire(final double x, final double y) {
         if (torpedoes.size() > 0) { return; }
-        torpedoes.add(new Torpedo(torpedoImg, torpedoRedImg, x, y));
-        //playSound(laserSound);
+        torpedoes.add(new Torpedo(torpedoImg, torpedoRedImg, torpedoGreenImg, x, y));
+        playSound(torpedoSnd);
     }
 
     private void fireInvaderTorpedo(final double x, final double y) {
@@ -393,6 +423,8 @@ public class Main extends Application {
 
     // ******************** Redraw ********************************************
     private void updateInvaders() {
+        if (invaders.isEmpty()) { reinit(); }
+
         double maxX = invaders.parallelStream().max(Comparator.comparingDouble(Invader::getX)).get().x + INVADER_WIDTH;
         double minX = invaders.parallelStream().min(Comparator.comparingDouble(Invader::getX)).get().x - INVADER_HEIGHT;
 
@@ -438,7 +470,7 @@ public class Main extends Application {
         // Draw Torpedos
         for (Torpedo torpedo : torpedoes) {
             torpedo.update();
-            ctx.drawImage(torpedo.y < 60 ? torpedo.image2 : torpedo.image, torpedo.x - torpedo.radius, torpedo.y - torpedo.radius);
+            ctx.drawImage(torpedo.y > HEIGHT - 150 ? torpedo.image3 : torpedo.y < 60 ? torpedo.image2 : torpedo.image, torpedo.x - torpedo.radius, torpedo.y - torpedo.radius);
             shields.forEach(shield -> {
                 if (isHitShield(torpedo.x + torpedo.width * 0.5, torpedo.y, shield, false)) { torpedo.toBeRemoved = true; }
             });
@@ -481,7 +513,7 @@ public class Main extends Application {
                     invader.toBeRemoved = true;
                     torpedo.toBeRemoved = true;
 
-                    //playSound(spaceShipExplosionSound);
+                    playSound(explosionSnd);
                 }
             }
         });
@@ -774,16 +806,19 @@ public class Main extends Application {
 
             if (x >= WIDTH) {
                 toBeRemoved = true;
+                mothershipSnd.stop();
             }
         }
     }
 
     private class Torpedo extends Sprite {
         private Image image2;
+        private Image image3;
 
-        public Torpedo(final Image image, final Image image2, final double x, final double y) {
+        public Torpedo(final Image image, final Image image2, final Image image3, final double x, final double y) {
             super(image, x, y - image.getHeight(), 0, TORPEDO_SPEED);
             this.image2 = image2;
+            this.image3 = image3;
         }
 
         @Override public void update() {
@@ -826,7 +861,7 @@ public class Main extends Application {
                     toBeRemoved        = true;
                     hasBeenHit         = true;
                     lastHasBeenHitCall = System.nanoTime();
-                    //playSound(shipExplosionSound);
+                    playSound(shipExplosionSnd);
                     noOfLifes--;
                     if (0 == noOfLifes) {
                         gameOver();
