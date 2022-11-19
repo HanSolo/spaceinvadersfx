@@ -136,7 +136,7 @@ public class Main extends Application {
                         lastInvaderUpdateCall = now;
                     }
                     if (now > lastMothershipCall + 30_000_000_000l) {
-                        motherships.add(new Mothership(mothershipImg, -mothershipImg.getWidth(), 30, RND.nextInt(100)));
+                        motherships.add(new Mothership(mothershipImg, -mothershipImg.getWidth(), 50, RND.nextInt(100)));
                         playSound(mothershipSnd);
                         lastMothershipCall = now;
                     }
@@ -168,10 +168,10 @@ public class Main extends Application {
         // Load all sounds
         toneCounter = 0;
         tones       = new ArrayList<>();
-        tones.add(new AudioClip(getClass().getResource("tone1.mp3").toExternalForm()));
-        tones.add(new AudioClip(getClass().getResource("tone2.mp3").toExternalForm()));
-        tones.add(new AudioClip(getClass().getResource("tone3.mp3").toExternalForm()));
-        tones.add(new AudioClip(getClass().getResource("tone4.mp3").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone1.wav").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone2.wav").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone3.wav").toExternalForm()));
+        tones.add(new AudioClip(getClass().getResource("tone4.wav").toExternalForm()));
         loadSounds();
 
         // Load all images
@@ -244,10 +244,10 @@ public class Main extends Application {
 
     // Helper methods
     private void loadSounds() {
-        torpedoSnd       = new AudioClip(getClass().getResource("torpedo.mp3").toExternalForm());
-        explosionSnd     = new AudioClip(getClass().getResource("explosion.mp3").toExternalForm());
-        shipExplosionSnd = new AudioClip(getClass().getResource("shipExplosion.mp3").toExternalForm());
-        mothershipSnd    = new AudioClip(getClass().getResource("mothership.mp3").toExternalForm());
+        torpedoSnd       = new AudioClip(getClass().getResource("torpedo.wav").toExternalForm());
+        explosionSnd     = new AudioClip(getClass().getResource("explosion.wav").toExternalForm());
+        shipExplosionSnd = new AudioClip(getClass().getResource("shipExplosion.wav").toExternalForm());
+        mothershipSnd    = new AudioClip(getClass().getResource("mothership.wav").toExternalForm());
         mothershipSnd.setCycleCount(-1);
     }
 
