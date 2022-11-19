@@ -64,8 +64,9 @@ public class Main extends Application {
 
 
     private AnimationTimer       timer;
+    private long                 invaderInterval;
+    private int                  invaderRowCounter;
     private long                 lastTimerCall;
-    private long                 lastInvaderStateCall;
     private long                 lastInvaderUpdateCall;
     private long                 lastHasBeenHitCall;
     private long                 lastMothershipCall;
@@ -116,20 +117,18 @@ public class Main extends Application {
 
     @Override public void init() {
         lastTimerCall         = System.nanoTime();
-        lastInvaderStateCall  = System.nanoTime();
         lastInvaderUpdateCall = System.nanoTime();
         lastHasBeenHitCall    = System.nanoTime();
         lastMothershipCall    = System.nanoTime();
 
         state                 = true;
+        invaderInterval       = 600_000_000l;
+        invaderRowCounter     = 0;
         timer                 = new AnimationTimer() {
             @Override public void handle(final long now) {
                 if (now > lastTimerCall) {
-                    if (now > lastInvaderStateCall + 500_000_000l) {
+                    if (now > lastInvaderUpdateCall + invaderInterval) {
                         state ^= true;
-                        lastInvaderStateCall = now;
-                    }
-                    if (now > lastInvaderUpdateCall + 500_000_000l) {
                         updateInvaders();
                         playSound(tones.get(toneCounter));
                         toneCounter++;
@@ -152,6 +151,13 @@ public class Main extends Application {
                         ship.respawn();
                     }
                     updateAndDraw();
+                    switch(invaderRowCounter) {
+                        case 4  -> invaderInterval  = 500_000_000l;
+                        case 8  -> invaderInterval  = 400_000_000l;
+                        case 12 -> invaderInterval = 300_000_000;
+                        case 16 -> invaderInterval = 200_000_000;
+                        case 20 -> invaderInterval = 100_000_000;
+                    }
                     lastTimerCall = now;
                 }
             }
@@ -181,7 +187,7 @@ public class Main extends Application {
         ship = new Ship(shipImg);
 
         invaders         = new ArrayList<>();
-        for (int iy      = 0 ; iy < 5 ; iy++) {
+        for (int iy = 0 ; iy < 5 ; iy++) {
             for (int ix = 0 ; ix < 11 ; ix++) {
                 Invader invader = null;
                 switch(iy) {
@@ -235,6 +241,8 @@ public class Main extends Application {
         Platform.exit();
     }
 
+
+    // Helper methods
     private void loadSounds() {
         torpedoSnd       = new AudioClip(getClass().getResource("torpedo.mp3").toExternalForm());
         explosionSnd     = new AudioClip(getClass().getResource("explosion.mp3").toExternalForm());
@@ -379,11 +387,12 @@ public class Main extends Application {
     // Re-Init
     private void reinit() {
         lastTimerCall         = System.nanoTime();
-        lastInvaderStateCall  = System.nanoTime();
         lastInvaderUpdateCall = System.nanoTime();
         lastHasBeenHitCall    = System.nanoTime();
         lastMothershipCall    = System.nanoTime();
         state                 = true;
+        invaderInterval       = 600_000_000l;
+        invaderRowCounter     = 0;
 
         // Initialize shields
         shields.clear();
@@ -395,7 +404,7 @@ public class Main extends Application {
         ship = new Ship(shipImg);
 
         invaders.clear();
-        for (int iy      = 0 ; iy < 5 ; iy++) {
+        for (int iy = 0 ; iy < 5 ; iy++) {
             for (int ix = 0 ; ix < 11 ; ix++) {
                 Invader invader = null;
                 switch(iy) {
@@ -431,10 +440,12 @@ public class Main extends Application {
         if (maxX > WIDTH && invaderStepX > 0) {
             invaderStepX = -9;
             invaders.forEach(invader -> invader.y += 9);
+            invaderRowCounter++;
             return;
         } else if (minX < 0 && invaderStepX < 0) {
             invaderStepX = 9;
             invaders.forEach(invader -> invader.y += 9);
+            invaderRowCounter++;
             return;
         }
 
@@ -770,6 +781,9 @@ public class Main extends Application {
                 fireInvaderTorpedo(x, y);
                 lastShot = now;
             }
+            if (y > HEIGHT - 150) {
+                gameOver();
+            }
         }
     }
 
@@ -869,7 +883,7 @@ public class Main extends Application {
                 }
             }
 
-            if (y + height > HEIGHT - 20) {
+            if (y + height > HEIGHT - 10) {
                 toBeRemoved = true;
                 invaderImpacts.put(new Point(x - invaderImpactImg.getWidth() * 0.5, y - invaderImpactImg.getHeight()), invaderImpactImg);
                 lastInvaderImpactCall = System.nanoTime();
