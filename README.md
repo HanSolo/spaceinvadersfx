@@ -3,7 +3,7 @@
 A little space invaders clone written in JavaFX. This game was not created to be perfect but just for the fun of it.
 It's completely based on a video that I've found on [YouTube](https://www.youtube.com/watch?v=MU4psw3ccUI)
 
-<img src="https://i.ibb.co/HX64Bp7/Space-Invaders.png" alt="SpaceInvaders" width="600"/>
+<img src="https://i.ibb.co/HX64Bp7/Space-Invaders.png" alt="SpaceInvaders" width="600" height="800"/>
 
 [SpaceInvadersVideo](https://www.youtube.com/watch?v=GajccpyHyFM)
 
